@@ -1,5 +1,5 @@
 import { resolve } from "path";
-import { defineConfig, externalizeDepsPlugin } from "electron-vite";
+import { defineConfig, ElectronViteConfig, externalizeDepsPlugin } from "electron-vite";
 import react from "@vitejs/plugin-react";
 import tailwindcss from "@tailwindcss/vite";
 
@@ -15,6 +15,12 @@ const sharedAliases: Record<string, string> = {
   "~": resolve("src/shared")
 };
 
+const commonOptions: Partial<ElectronViteConfig["main"]> = {
+  build: {
+    minify: "esbuild"
+  }
+};
+
 export default defineConfig({
   main: {
     plugins: [externalizeDepsPlugin({ exclude: ["electron-context-menu"] })],
@@ -23,7 +29,8 @@ export default defineConfig({
         ...mainAliases,
         ...sharedAliases
       }
-    }
+    },
+    ...commonOptions
   },
   preload: {
     plugins: [externalizeDepsPlugin({ exclude: ["electron-chrome-extensions"] })],
@@ -32,7 +39,8 @@ export default defineConfig({
         ...mainAliases,
         ...sharedAliases
       }
-    }
+    },
+    ...commonOptions
   },
   renderer: {
     resolve: {
@@ -41,6 +49,7 @@ export default defineConfig({
         ...sharedAliases
       }
     },
-    plugins: [react(), tailwindcss()]
+    plugins: [react(), tailwindcss()],
+    ...commonOptions
   }
 });
