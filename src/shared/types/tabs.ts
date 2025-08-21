@@ -25,6 +25,10 @@ export type TabData = {
   isPictureInPicture: boolean;
   faviconURL: string | null;
   asleep: boolean;
+  /** Indicates if the tab is pinned within its space */
+  isPinned?: boolean;
+  /** The original URL the tab resets to when the “-” button is clicked */
+  pinnedUrl?: string | null;
 
   navHistory: NavigationEntry[];
   navHistoryIndex: number;

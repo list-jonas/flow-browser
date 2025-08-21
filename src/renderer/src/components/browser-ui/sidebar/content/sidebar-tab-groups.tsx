@@ -1,7 +1,7 @@
 import { Button } from "@/components/ui/button";
 import { SidebarMenuButton, useSidebar } from "@/components/ui/resizable-sidebar";
 import { cn, craftActiveFaviconURL } from "@/lib/utils";
-import { XIcon, Volume2, VolumeX } from "lucide-react";
+import { XIcon, Volume2, VolumeX, Minus } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { motion, AnimatePresence } from "motion/react";
 import { TabGroup } from "@/components/providers/tabs-provider";
@@ -13,6 +13,7 @@ import {
 import { attachClosestEdge, extractClosestEdge, Edge } from "@atlaskit/pragmatic-drag-and-drop-hitbox/closest-edge";
 import { TabData } from "~/types/tabs";
 import { DropIndicator } from "@/components/browser-ui/sidebar/content/space-sidebar";
+import type { PinnedTabSourceData } from "@/components/browser-ui/sidebar/content/sidebar-pinned-tab";
 
 const MotionSidebarMenuButton = motion(SidebarMenuButton);
 
@@ -25,6 +26,7 @@ export function SidebarTab({ tab, isFocused }: { tab: TabData; isFocused: boolea
 
   const isMuted = tab.muted;
   const isPlayingAudio = tab.audible;
+  const isPinned = !!tab.isPinned;
 
   const { open } = useSidebar();
 
@@ -47,6 +49,16 @@ export function SidebarTab({ tab, isFocused }: { tab: TabData; isFocused: boolea
     if (!tab.id) return;
     e.preventDefault();
     flow.tabs.closeTab(tab.id);
+  };
+
+  const handleResetTab = (e: React.MouseEvent) => {
+    if (!tab.id) return;
+    e.preventDefault();
+    if (tab.pinnedUrl) {
+      flow.navigation.goTo(tab.pinnedUrl, tab.id);
+    } else {
+      flow.navigation.reloadTab(tab.id);
+    }
   };
 
   const handleMouseDown = (e: React.MouseEvent) => {
@@ -168,17 +180,21 @@ export function SidebarTab({ tab, isFocused }: { tab: TabData; isFocused: boolea
           </div>
           {/* Right side */}
           <div className={cn("flex flex-row items-center gap-0.5", open && "flex-shrink-0")}>
-            {/* Close tab button */}
+            {/* Close/Reset tab button */}
             {isHovered && (
               <motion.div whileTap={{ scale: 0.95 }} className="flex items-center justify-center">
                 <Button
                   variant="ghost"
                   size="icon"
-                  onClick={handleCloseTab}
+                  onClick={isPinned ? handleResetTab : handleCloseTab}
                   className="size-5 bg-transparent rounded-sm hover:bg-black/10 dark:hover:bg-white/10 flex items-center justify-center"
                   onMouseDown={(event) => event.stopPropagation()}
                 >
-                  <XIcon className="size-4 text-muted-foreground dark:text-white" />
+                  {isPinned ? (
+                    <Minus className="size-4 text-muted-foreground dark:text-white" />
+                  ) : (
+                    <XIcon className="size-4 text-muted-foreground dark:text-white" />
+                  )}
                 </Button>
               </motion.div>
             )}
@@ -231,8 +247,26 @@ export function SidebarTabGroups({
 
       setClosestEdge(null);
 
-      const sourceData = args.source.data as TabGroupSourceData;
-      const sourceTabId = sourceData.primaryTabId;
+      const sourceData = args.source.data as TabGroupSourceData | PinnedTabSourceData;
+
+      if (sourceData.type === "pinned-tab") {
+        // Unpin the tab first
+        flow.tabs.setTabPinned(sourceData.tabId, false);
+        // Treat like moving a single tab (not group) into this group
+        const sourceTabId = sourceData.tabId;
+        let newPos: number | undefined = undefined;
+        if (closestEdgeOfTarget === "top") {
+          newPos = position - 0.5;
+        } else if (closestEdgeOfTarget === "bottom") {
+          newPos = position + 0.5;
+        }
+        if (newPos !== undefined) {
+          moveTab(sourceTabId, newPos);
+        }
+        return;
+      }
+
+      const sourceTabId = (sourceData as TabGroupSourceData).primaryTabId;
 
       let newPos: number | undefined = undefined;
 
@@ -284,7 +318,11 @@ export function SidebarTabGroups({
         );
       },
       canDrop: (args) => {
-        const sourceData = args.source.data as TabGroupSourceData;
+        const sourceData = args.source.data as TabGroupSourceData | PinnedTabSourceData;
+        if (sourceData.type === "pinned-tab") {
+          // Only allow dropping into same profile and different space (or same) for now
+          return sourceData.profileId === tabGroup.profileId && sourceData.spaceId === tabGroup.spaceId;
+        }
         if (sourceData.type !== "tab-group") {
           return false;
         }

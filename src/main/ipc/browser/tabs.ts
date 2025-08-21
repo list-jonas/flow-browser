@@ -27,6 +27,8 @@ export function getTabData(tab: Tab): TabData {
     isPictureInPicture: tab.isPictureInPicture,
     faviconURL: tab.faviconURL,
     asleep: tab.asleep,
+    isPinned: (tab as any).isPinned ?? false,
+    pinnedUrl: (tab as any).pinnedUrl ?? null,
 
     navHistory: tab.navHistory,
     navHistoryIndex: tab.navHistoryIndex
@@ -229,6 +231,25 @@ ipcMain.handle("tabs:set-tab-muted", async (_event, tabId: number, muted: boolea
   tab.webContents.setAudioMuted(muted);
 
   // No event for mute state change, so we need to update the tab state manually
+  tab.updateTabState();
+  return true;
+});
+
+ipcMain.handle("tabs:set-tab-pinned", async (_event, tabId: number, pinned: boolean, pinnedUrl?: string | null) => {
+  if (!browser) return false;
+
+  const tabManager = browser.tabs;
+  if (!tabManager) return false;
+
+  const tab = tabManager.getTabById(tabId);
+  if (!tab) return false;
+
+  tab.updateStateProperty("isPinned", pinned);
+  if (pinnedUrl !== undefined) {
+    tab.updateStateProperty("pinnedUrl", pinnedUrl);
+  }
+
+  // No direct event for pinned state change, update tab state manually
   tab.updateTabState();
   return true;
 });

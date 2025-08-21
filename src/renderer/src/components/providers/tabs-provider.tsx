@@ -14,6 +14,8 @@ interface TabsContextValue {
   getTabGroups: (spaceId: string) => TabGroup[];
   getActiveTabGroup: (spaceId: string) => TabGroup | null;
   getFocusedTab: (spaceId: string) => TabData | null;
+  // Pinned Tabs //
+  getPinnedTabs: (spaceId: string) => TabData[];
 
   // Current Space //
   activeTabGroup: TabGroup | null;
@@ -102,7 +104,7 @@ export const TabsProvider = ({ children }: TabsProviderProps) => {
       }
     }
 
-    const tabsWithoutGroups = tabsData.tabs.filter((tab) => !tabsWithGroups.includes(tab.id));
+    const tabsWithoutGroups = tabsData.tabs.filter((tab) => !tabsWithGroups.includes(tab.id) && !tab.isPinned);
     for (const tab of tabsWithoutGroups) {
       allTabGroupDatas.push({
         // to not conflict with tab group ids
@@ -125,11 +127,13 @@ export const TabsProvider = ({ children }: TabsProviderProps) => {
 
       const tabGroup = {
         ...tabGroupData,
-        tabs: tabsData?.tabs.filter((tab) => tabGroupData.tabIds.includes(tab.id)) || [],
+        tabs: (tabsData?.tabs.filter((tab) => tabGroupData.tabIds.includes(tab.id)) || []).filter((t) => !t.isPinned),
         active: isActive,
         focusedTab
       };
-      tabGroups.push(tabGroup);
+      if (tabGroup.tabs.length > 0) {
+        tabGroups.push(tabGroup);
+      }
     });
 
     return tabGroups;
@@ -172,6 +176,14 @@ export const TabsProvider = ({ children }: TabsProviderProps) => {
     [tabGroups]
   );
 
+  const getPinnedTabs = useCallback(
+    (spaceId: string) => {
+      if (!tabsData) return [];
+      return tabsData.tabs.filter((tab) => tab.spaceId === spaceId && tab.isPinned).sort((a, b) => a.position - b.position);
+    },
+    [tabsData]
+  );
+
   const activeTabGroup = useMemo(() => {
     if (!currentSpace) return null;
     return getActiveTabGroup(currentSpace.id);
@@ -206,6 +218,7 @@ export const TabsProvider = ({ children }: TabsProviderProps) => {
         getTabGroups,
         getActiveTabGroup,
         getFocusedTab,
+        getPinnedTabs,
 
         // Current Space //
         activeTabGroup,

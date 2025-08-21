@@ -53,6 +53,17 @@ export interface FlowTabsAPI {
    * @param muted Whether the tab should be muted
    */
   setTabMuted: (tabId: number, muted: boolean) => Promise<boolean>;
+  /**
+   * Set the pinned state of a tab
+   * @param tabId The id of the tab to set pinned state for
+   * @param pinned Whether the tab should be pinned
+   * @param pinnedUrl Optional URL to set when pinning
+   */
+  setTabPinned: (
+    tabId: number,
+    pinned: boolean,
+    pinnedUrl?: string | null
+  ) => Promise<boolean>;
 
   /**
    * Move a tab to a new position

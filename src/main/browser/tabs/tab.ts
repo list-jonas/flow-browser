@@ -35,6 +35,8 @@ type TabStateProperty =
   | "isPictureInPicture"
   | "asleep"
   | "lastActiveAt"
+  | "isPinned"
+  | "pinnedUrl"
   | "position";
 type TabContentProperty = "title" | "url" | "isLoading" | "audible" | "muted" | "navHistory" | "navHistoryIndex";
 
@@ -73,6 +75,8 @@ export interface TabCreationOptions {
   // Options
   asleep?: boolean;
   position?: number;
+  isPinned?: boolean;
+  pinnedUrl?: string | null;
 
   // Old States to be restored
   title?: string;
@@ -130,6 +134,8 @@ export class Tab extends TypedEventEmitter<TabEvents> {
   public fullScreen: boolean = false;
   public isPictureInPicture: boolean = false;
   public asleep: boolean = false;
+  public isPinned: boolean = false;
+  public pinnedUrl: string | null = null;
   public createdAt: number;
   public lastActiveAt: number;
   public position: number;
@@ -194,6 +200,8 @@ export class Tab extends TypedEventEmitter<TabEvents> {
       // Options
       asleep = false,
       position,
+      isPinned = false,
+      pinnedUrl = null,
 
       // Old States to be restored
       title,
@@ -217,6 +225,10 @@ export class Tab extends TypedEventEmitter<TabEvents> {
       const smallestPosition = this.tabManager.getSmallestPosition();
       this.position = smallestPosition - 1;
     }
+
+    // Set pinned state
+    this.isPinned = isPinned;
+    this.pinnedUrl = pinnedUrl ?? null;
 
     // Create WebContentsView
     const webContentsView = createWebContentsView(session, webContentsViewOptions);

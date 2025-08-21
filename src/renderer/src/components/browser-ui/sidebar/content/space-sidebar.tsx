@@ -1,5 +1,7 @@
 import { NewTabButton } from "@/components/browser-ui/sidebar/content/new-tab-button";
 import { SidebarTabGroups } from "@/components/browser-ui/sidebar/content/sidebar-tab-groups";
+import { SidebarPinnedTab } from "@/components/browser-ui/sidebar/content/sidebar-pinned-tab";
+import { SidebarPinnedTabDropTarget } from "@/components/browser-ui/sidebar/content/sidebar-pinned-tab-drop-target";
 import { SpaceTitle } from "@/components/browser-ui/sidebar/content/space-title";
 import { useTabs } from "@/components/providers/tabs-provider";
 import { Button } from "@/components/ui/button";
@@ -70,9 +72,14 @@ function SidebarSectionDivider({ hasTabs, handleCloseAllTabs }: { hasTabs: boole
 }
 
 export function SpaceSidebar({ space }: { space: Space }) {
-  const { getTabGroups, getActiveTabGroup, getFocusedTab } = useTabs();
+  const { getTabGroups, getActiveTabGroup, getFocusedTab, getPinnedTabs } = useTabs();
 
   const tabGroups = getTabGroups(space.id);
+  const pinnedTabs = getPinnedTabs(space.id);
+
+  const movePinnedTab = useCallback((tabId: number, newPos: number) => {
+    flow.tabs.moveTab(tabId, newPos);
+  }, []);
 
   const activeTabGroup = getActiveTabGroup(space.id);
   const focusedTab = getFocusedTab(space.id);
@@ -130,12 +137,38 @@ export function SpaceSidebar({ space }: { space: Space }) {
       <SpaceTitle space={space} />
       <SidebarGroup className="py-0.5 flex-1">
         <SidebarMenu className="flex-1">
-          {ENABLE_SECTION_DEVIDER && (
+          {/* Pinned Tabs Section */}
+          <AnimatePresence initial={false}>
+            {pinnedTabs.map((tab, index) => (
+              <SidebarPinnedTab
+                key={tab.id}
+                tab={tab}
+                isFocused={focusedTab?.id === tab.id}
+                isSpaceLight={isSpaceLight}
+                position={index}
+                movePinnedTab={movePinnedTab}
+              />
+            ))}
+          </AnimatePresence>
+
+          {/* Drop zone after pinned tabs for empty list or append */}
+          <SidebarPinnedTabDropTarget
+            isSpaceLight={isSpaceLight}
+            pinnedTabsLength={pinnedTabs.length}
+            movePinnedTab={movePinnedTab}
+          />
+
+          {/* Divider between pinned and main tabs */}
+          {ENABLE_SECTION_DEVIDER && pinnedTabs.length > 0 && (
             <AnimatePresence>
-              {hasTabs && <SidebarSectionDivider hasTabs={hasTabs} handleCloseAllTabs={handleCloseAllTabs} />}
+              <SidebarSectionDivider hasTabs={hasTabs} handleCloseAllTabs={handleCloseAllTabs} />
             </AnimatePresence>
           )}
+
+          {/* New Tab Button */}
           <NewTabButton />
+
+          {/* Main Tab Groups Section */}
           <div className="flex-1 flex flex-col justify-between gap-1">
             <AnimatePresence initial={false}>
               {sortedTabGroups.map((tabGroup, index) => (

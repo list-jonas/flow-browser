@@ -241,7 +241,13 @@ const tabsAPI: FlowTabsAPI = {
   moveTab: async (tabId: number, newPosition: number) => {
     return ipcRenderer.invoke("tabs:move-tab", tabId, newPosition);
   },
-
+  setTabPinned: async (
+    tabId: number,
+    pinned: boolean,
+    pinnedUrl?: string | null
+  ) => {
+    return ipcRenderer.invoke("tabs:set-tab-pinned", tabId, pinned, pinnedUrl);
+  },
   moveTabToWindowSpace: async (tabId: number, spaceId: string, newPosition?: number) => {
     return ipcRenderer.invoke("tabs:move-tab-to-window-space", tabId, spaceId, newPosition);
   },
