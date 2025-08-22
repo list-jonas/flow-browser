@@ -5,6 +5,7 @@ import { Minus, Volume2, VolumeX } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { motion, AnimatePresence } from "motion/react";
 import { TabData } from "~/types/tabs";
+import type { TabGroupSourceData } from "@/components/browser-ui/sidebar/content/sidebar-tab-groups";
 import {
   draggable,
   dropTargetForElements,
@@ -90,10 +91,22 @@ export function SidebarPinnedTab({ tab, isFocused, isSpaceLight, position, moveP
 
     const onDrop = (args: ElementDropTargetEventBasePayload) => {
       setClosestEdge(null);
-      const src = args.source.data as PinnedTabSourceData;
-      if (src.type !== "pinned-tab") return;
+      const srcAny = args.source.data as PinnedTabSourceData | TabGroupSourceData;
+
+      let sourceTabId: number | null = null;
+
+      if (srcAny.type === "pinned-tab") {
+        sourceTabId = srcAny.tabId;
+      } else if (srcAny.type === "tab-group") {
+        // Pin the tab first when dragging from normal list
+        flow.tabs.setTabPinned(srcAny.primaryTabId, true);
+        sourceTabId = srcAny.primaryTabId;
+      }
+
+      if (sourceTabId === null) return;
+
       const newPos = extractClosestEdge(args.self.data) === "top" ? position - 0.5 : position + 0.5;
-      movePinnedTab(src.tabId, newPos);
+      movePinnedTab(sourceTabId, newPos);
     };
 
     const cleanupDrag = draggable({
@@ -112,8 +125,14 @@ export function SidebarPinnedTab({ tab, isFocused, isSpaceLight, position, moveP
       element: el,
       getData: ({ input, element }) => attachClosestEdge({}, { input, element, allowedEdges: ["top", "bottom"] }),
       canDrop: ({ source }) => {
-        const src = source.data as PinnedTabSourceData;
-        return src.type === "pinned-tab" && src.tabId !== tab.id && src.profileId === tab.profileId;
+        const src = source.data as PinnedTabSourceData | TabGroupSourceData;
+        if (src.type === "pinned-tab") {
+          return src.tabId !== tab.id && src.profileId === tab.profileId;
+        }
+        if (src.type === "tab-group") {
+          return src.profileId === tab.profileId;
+        }
+        return false;
       },
       onDrop,
       onDragEnter: onChange,

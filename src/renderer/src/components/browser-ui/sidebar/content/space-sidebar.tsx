@@ -151,22 +151,29 @@ export function SpaceSidebar({ space }: { space: Space }) {
             ))}
           </AnimatePresence>
 
-          {/* Drop zone after pinned tabs for empty list or append */}
-          <SidebarPinnedTabDropTarget
-            isSpaceLight={isSpaceLight}
-            pinnedTabsLength={pinnedTabs.length}
-            movePinnedTab={movePinnedTab}
-          />
-
-          {/* Divider between pinned and main tabs */}
-          {ENABLE_SECTION_DEVIDER && pinnedTabs.length > 0 && (
-            <AnimatePresence>
-              <SidebarSectionDivider hasTabs={hasTabs} handleCloseAllTabs={handleCloseAllTabs} />
-            </AnimatePresence>
+          {/* Drag zone: if Clear divider visible, use it; otherwise use New Tab button */}
+          {pinnedTabs.length > 0 ? (
+            <SidebarPinnedTabDropTarget
+              isSpaceLight={isSpaceLight}
+              pinnedTabsLength={pinnedTabs.length}
+              movePinnedTab={movePinnedTab}
+            >
+              <AnimatePresence>
+                <SidebarSectionDivider hasTabs={hasTabs} handleCloseAllTabs={handleCloseAllTabs} />
+              </AnimatePresence>
+            </SidebarPinnedTabDropTarget>
+          ) : (
+            <SidebarPinnedTabDropTarget
+              isSpaceLight={isSpaceLight}
+              pinnedTabsLength={pinnedTabs.length}
+              movePinnedTab={movePinnedTab}
+            >
+              <NewTabButton />
+            </SidebarPinnedTabDropTarget>
           )}
 
-          {/* New Tab Button */}
-          <NewTabButton />
+          {/* If Clear divider is shown, render New Tab button separately below it */}
+          {pinnedTabs.length > 0 && <NewTabButton />}
 
           {/* Main Tab Groups Section */}
           <div className="flex-1 flex flex-col justify-between gap-1">

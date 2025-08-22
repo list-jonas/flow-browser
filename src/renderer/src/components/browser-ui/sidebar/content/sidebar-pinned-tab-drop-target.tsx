@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import { DropIndicator } from "@/components/browser-ui/sidebar/content/space-sidebar";
 import { PinnedTabSourceData } from "@/components/browser-ui/sidebar/content/sidebar-pinned-tab";
 import { TabGroupSourceData } from "@/components/browser-ui/sidebar/content/sidebar-tab-groups";
@@ -11,12 +11,14 @@ interface SidebarPinnedTabDropTargetProps {
   isSpaceLight: boolean;
   pinnedTabsLength: number;
   movePinnedTab: (tabId: number, newPos: number) => void;
+  children?: ReactNode;
 }
 
 export function SidebarPinnedTabDropTarget({
   isSpaceLight,
   pinnedTabsLength,
-  movePinnedTab
+  movePinnedTab,
+  children
 }: SidebarPinnedTabDropTargetProps) {
   const [showDropIndicator, setShowDropIndicator] = useState(false);
   const dropTargetRef = useRef<HTMLDivElement>(null);
@@ -54,10 +56,13 @@ export function SidebarPinnedTabDropTarget({
   }, [movePinnedTab, pinnedTabsLength]);
 
   return (
-    <>
-      {showDropIndicator && <DropIndicator isSpaceLight={isSpaceLight} />}
-      {/* Visible red drop zone */}
-      <div ref={dropTargetRef} className="h-20 flex-shrink-0 bg-red-500/20" />
-    </>
+    <div ref={dropTargetRef} className="relative flex flex-col">
+      {showDropIndicator && (
+        <div className="absolute inset-0 pointer-events-none">
+          <DropIndicator isSpaceLight={isSpaceLight} />
+        </div>
+      )}
+      {children}
+    </div>
   );
 }
