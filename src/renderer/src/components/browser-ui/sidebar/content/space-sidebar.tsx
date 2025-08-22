@@ -77,9 +77,30 @@ export function SpaceSidebar({ space }: { space: Space }) {
   const tabGroups = getTabGroups(space.id);
   const pinnedTabs = getPinnedTabs(space.id);
 
-  const movePinnedTab = useCallback((tabId: number, newPos: number) => {
-    flow.tabs.moveTab(tabId, newPos);
-  }, []);
+  const movePinnedTab = useCallback(
+    (tabId: number, newPosition: number) => {
+      // Ensure we are working with a fresh copy ordered by the persisted position
+      const sortedPinned = [...pinnedTabs].sort((a, b) => a.position - b.position);
+
+      // Build a quick lookup from tabId → currentIndex for fast access inside the sort callback
+      const indexMap = new Map(sortedPinned.map((t, idx) => [t.id, idx]));
+
+      // Derive the new order by using the same comparator technique used for normal tabs
+      const reOrdered = [...sortedPinned].sort((a, b) => {
+        const aPos = a.id === tabId ? newPosition : (indexMap.get(a.id) ?? 0);
+        const bPos = b.id === tabId ? newPosition : (indexMap.get(b.id) ?? 0);
+        return aPos - bPos;
+      });
+
+      // Persist the updated sequential positions (0,1,2,...) back to main process
+      reOrdered.forEach((tab, idx) => {
+        if (tab.position !== idx) {
+          flow.tabs.moveTab(tab.id, idx);
+        }
+      });
+    },
+    [pinnedTabs]
+  );
 
   const activeTabGroup = getActiveTabGroup(space.id);
   const focusedTab = getFocusedTab(space.id);

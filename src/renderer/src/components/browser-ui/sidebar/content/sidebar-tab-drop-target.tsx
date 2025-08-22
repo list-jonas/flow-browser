@@ -31,9 +31,9 @@ export function SidebarTabDropTarget({ spaceData, isSpaceLight, moveTab, biggest
     function onDrop(args: ElementDropTargetEventBasePayload) {
       setShowDropIndicator(false);
       const srcAny = args.source.data as TabGroupSourceData | PinnedTabSourceData;
-    
+
       let sourceTabId: number;
-    
+
       if (srcAny.type === "pinned-tab") {
         // Unpin the tab first before moving
         flow.tabs.setTabPinned(srcAny.tabId, false);
@@ -41,9 +41,9 @@ export function SidebarTabDropTarget({ spaceData, isSpaceLight, moveTab, biggest
       } else {
         sourceTabId = srcAny.primaryTabId;
       }
-    
+
       const newPos = biggestIndex + 1;
-    
+
       if (srcAny.spaceId !== spaceData.id) {
         if (srcAny.profileId !== spaceData.profileId) {
           // TODO: cross-profile move not supported yet
