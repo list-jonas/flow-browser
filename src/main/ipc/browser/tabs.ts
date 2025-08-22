@@ -377,7 +377,7 @@ ipcMain.on("tabs:show-context-menu", (event, tabId: number) => {
   );
 
   // Option to replace pinned URL with the current tab URL – only when different
-  if (isPinned && tab.pinnedUrl !== tab.url) {
+  if (isPinned && tab.url && tab.pinnedUrl !== tab.url) {
     contextMenu.append(
       new MenuItem({
         label: "Replace Pinned URL with Current",

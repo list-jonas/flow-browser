@@ -25,6 +25,14 @@ export async function persistTabToStorage(tab: Tab) {
   const uniqueId = tab.uniqueId;
   const tabData = getTabData(tab);
 
+  // Store pinned tabs with their original pinned URL unless user opted to remember last visited URL
+  const rememberPinnedUrl = !!getSettingValueById("pinnedTabRememberLastUrl");
+  if (tab.isPinned && !rememberPinnedUrl && tab.pinnedUrl) {
+    tabData.url = tab.pinnedUrl;
+    tabData.navHistory = [{ title: tab.title, url: tab.pinnedUrl }];
+    tabData.navHistoryIndex = 0;
+  }
+
   // Do NOT save sleep tabs
   const asleep = tab.asleep;
   const saveURL = !asleep && tab.url !== SLEEP_MODE_URL;

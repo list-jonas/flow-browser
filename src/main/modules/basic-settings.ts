@@ -208,6 +208,15 @@ export const BasicSettings: BasicSetting[] = [
     ]
   },
 
+  // Pinned Tabs: Remember Last URL
+  {
+    id: "pinnedTabRememberLastUrl",
+    name: "Remember Last URL for Pinned Tabs",
+    showName: true,
+    type: "boolean",
+    defaultValue: false
+  },
+
   // [EXPERIMENTAL] Enable Flow PDF Viewer
   {
     id: "enableFlowPdfViewer",
@@ -260,7 +269,7 @@ export const BasicSettingCards: BasicSettingCard[] = [
   {
     title: "Performance Settings",
     subtitle: "Settings to improve performance",
-    settings: ["archiveTabAfter", "sleepTabAfter"]
+    settings: ["archiveTabAfter", "sleepTabAfter", "pinnedTabRememberLastUrl"]
   },
 
   // Onboarding Card (Internal)

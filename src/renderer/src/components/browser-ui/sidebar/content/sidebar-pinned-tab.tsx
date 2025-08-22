@@ -217,7 +217,7 @@ export function SidebarPinnedTab({ tab, isFocused, isSpaceLight, position, moveP
                 </motion.div>
               )}
             </AnimatePresence>
-            {tab.pinnedUrl && tab.pinnedUrl !== tab.url && (
+            {tab.pinnedUrl && tab.url && tab.pinnedUrl !== tab.url && (
               <span className="mx-1 text-muted-foreground dark:text-white/50">/</span>
             )}
             <span className="ml-1 truncate min-w-0 flex-1 font-medium">{tab.title}</span>
