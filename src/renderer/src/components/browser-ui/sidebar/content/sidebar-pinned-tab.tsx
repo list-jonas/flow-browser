@@ -98,13 +98,14 @@ export function SidebarPinnedTab({ tab, isFocused, isSpaceLight, position, moveP
 
     const cleanupDrag = draggable({
       element: el,
-      getInitialData: () => ({
-        type: "pinned-tab",
-        tabId: tab.id,
-        profileId: tab.profileId,
-        spaceId: tab.spaceId,
-        position
-      } satisfies PinnedTabSourceData)
+      getInitialData: () =>
+        ({
+          type: "pinned-tab",
+          tabId: tab.id,
+          profileId: tab.profileId,
+          spaceId: tab.spaceId,
+          position
+        }) satisfies PinnedTabSourceData
     });
 
     const cleanupDrop = dropTargetForElements({
@@ -150,7 +151,7 @@ export function SidebarPinnedTab({ tab, isFocused, isSpaceLight, position, moveP
         layout
       >
         <div className="flex flex-row justify-between w-full h-full">
-          <div className={cn("flex flex-row items-center flex-1", open && "min-w-0 mr-1")}>            
+          <div className={cn("flex flex-row items-center flex-1", open && "min-w-0 mr-1")}>
             <div className="w-4 h-4 flex-shrink-0 mr-1">
               {!noFavicon && (
                 <img
@@ -188,7 +189,7 @@ export function SidebarPinnedTab({ tab, isFocused, isSpaceLight, position, moveP
             </AnimatePresence>
             <span className="ml-1 truncate min-w-0 flex-1 font-medium">{tab.title}</span>
           </div>
-          <div className={cn("flex flex-row items-center gap-0.5", open && "flex-shrink-0")}>            
+          <div className={cn("flex flex-row items-center gap-0.5", open && "flex-shrink-0")}>
             {isHovered && (
               <motion.div whileTap={{ scale: 0.95 }} className="flex items-center justify-center">
                 <Button

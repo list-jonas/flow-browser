@@ -245,8 +245,13 @@ ipcMain.handle("tabs:set-tab-pinned", async (_event, tabId: number, pinned: bool
   if (!tab) return false;
 
   tab.updateStateProperty("isPinned", pinned);
-  if (pinnedUrl !== undefined) {
-    tab.updateStateProperty("pinnedUrl", pinnedUrl);
+
+  if (pinned) {
+    const urlToPin = pinnedUrl !== undefined ? pinnedUrl : tab.url;
+    tab.updateStateProperty("pinnedUrl", urlToPin);
+  } else {
+    // Clear pinned URL when unpinning
+    tab.updateStateProperty("pinnedUrl", null);
   }
 
   // No direct event for pinned state change, update tab state manually

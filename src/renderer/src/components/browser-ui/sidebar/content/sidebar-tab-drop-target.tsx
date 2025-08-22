@@ -1,4 +1,5 @@
 import { TabGroupSourceData } from "@/components/browser-ui/sidebar/content/sidebar-tab-groups";
+import { PinnedTabSourceData } from "@/components/browser-ui/sidebar/content/sidebar-pinned-tab";
 import { DropIndicator } from "@/components/browser-ui/sidebar/content/space-sidebar";
 import { useEffect, useRef, useState } from "react";
 import { Space } from "~/flow/interfaces/sessions/spaces";
@@ -26,19 +27,27 @@ export function SidebarTabDropTarget({ spaceData, isSpaceLight, moveTab, biggest
     const el = dropTargetRef.current;
     if (!el) return () => {};
 
+    // inside onDrop definition replace body
     function onDrop(args: ElementDropTargetEventBasePayload) {
       setShowDropIndicator(false);
-
-      const sourceData = args.source.data as TabGroupSourceData;
-      const sourceTabId = sourceData.primaryTabId;
-
+      const srcAny = args.source.data as TabGroupSourceData | PinnedTabSourceData;
+    
+      let sourceTabId: number;
+    
+      if (srcAny.type === "pinned-tab") {
+        // Unpin the tab first before moving
+        flow.tabs.setTabPinned(srcAny.tabId, false);
+        sourceTabId = srcAny.tabId;
+      } else {
+        sourceTabId = srcAny.primaryTabId;
+      }
+    
       const newPos = biggestIndex + 1;
-
-      if (sourceData.spaceId != spaceData.id) {
-        if (sourceData.profileId != spaceData.profileId) {
-          // TODO: @MOVE_TABS_BETWEEN_PROFILES not supported yet
+    
+      if (srcAny.spaceId !== spaceData.id) {
+        if (srcAny.profileId !== spaceData.profileId) {
+          // TODO: cross-profile move not supported yet
         } else {
-          // move tab to new space
           flow.tabs.moveTabToWindowSpace(sourceTabId, spaceData.id, newPos);
         }
       } else {
@@ -53,16 +62,16 @@ export function SidebarTabDropTarget({ spaceData, isSpaceLight, moveTab, biggest
     const cleanupDropTarget = dropTargetForElements({
       element: el,
       canDrop: (args) => {
-        const sourceData = args.source.data as TabGroupSourceData;
-        if (sourceData.type !== "tab-group") {
+        const src = args.source.data as TabGroupSourceData | PinnedTabSourceData;
+        if (src.type === "pinned-tab") {
+          return src.profileId === spaceData.profileId;
+        }
+        if (src.type !== "tab-group") {
           return false;
         }
-
-        if (sourceData.profileId !== spaceData.profileId) {
-          // TODO: @MOVE_TABS_BETWEEN_PROFILES not supported yet
+        if (src.profileId !== spaceData.profileId) {
           return false;
         }
-
         return true;
       },
       onDrop: onDrop,
