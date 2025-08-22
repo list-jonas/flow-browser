@@ -173,8 +173,12 @@ export function SidebarPinnedTab({ tab, isFocused, isSpaceLight, position, moveP
         exit={{ opacity: 0, x: -10 }}
         onMouseDown={handleMouseDown}
         onMouseUp={() => setIsPressed(false)}
-        transition={{ duration: 0.2, scale: { type: "spring", stiffness: 600, damping: 20 } }}
+        transition={{
+          duration: 0.2,
+          scale: { type: "spring", stiffness: 600, damping: 20 }
+        }}
         layout
+        layoutId={`tab-${tab.id}`}
       >
         <div className="flex flex-row justify-between w-full h-full">
           <div className={cn("flex flex-row items-center flex-1", open && "min-w-0 mr-1")}>

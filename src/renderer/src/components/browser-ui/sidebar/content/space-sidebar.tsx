@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { SidebarGroup, SidebarMenu, useSidebar } from "@/components/ui/resizable-sidebar";
 import { Space } from "~/flow/interfaces/sessions/spaces";
 import { cn, hex_is_light } from "@/lib/utils";
-import { AnimatePresence, motion } from "motion/react";
+import { AnimatePresence, motion, LayoutGroup } from "motion/react";
 import { useCallback, useMemo, useRef } from "react";
 import { DropIndicator as BaseDropIndicator } from "@atlaskit/pragmatic-drag-and-drop-react-drop-indicator/list-item";
 import { SidebarTabDropTarget } from "@/components/browser-ui/sidebar/content/sidebar-tab-drop-target";
@@ -167,66 +167,68 @@ export function SpaceSidebar({ space }: { space: Space }) {
       <SpaceTitle space={space} />
       <SidebarGroup className="py-0.5 flex-1">
         <SidebarMenu className="flex-1">
-          {/* Pinned Tabs Section */}
-          <AnimatePresence initial={false}>
-            {pinnedTabs.map((tab, index) => (
-              <SidebarPinnedTab
-                key={tab.id}
-                tab={tab}
-                isFocused={focusedTab?.id === tab.id}
-                isSpaceLight={isSpaceLight}
-                position={index}
-                movePinnedTab={movePinnedTab}
-              />
-            ))}
-          </AnimatePresence>
-
-          {/* Drag zone: if Clear divider visible, use it; otherwise use New Tab button */}
-          {pinnedTabs.length > 0 ? (
-            <SidebarPinnedTabDropTarget
-              isSpaceLight={isSpaceLight}
-              pinnedTabsLength={pinnedTabs.length}
-              movePinnedTab={movePinnedTab}
-            >
-              <AnimatePresence>
-                <SidebarSectionDivider hasTabs={hasTabs} handleCloseAllTabs={handleCloseAllTabs} />
-              </AnimatePresence>
-            </SidebarPinnedTabDropTarget>
-          ) : (
-            <SidebarPinnedTabDropTarget
-              isSpaceLight={isSpaceLight}
-              pinnedTabsLength={pinnedTabs.length}
-              movePinnedTab={movePinnedTab}
-            >
-              <NewTabButton />
-            </SidebarPinnedTabDropTarget>
-          )}
-
-          {/* If Clear divider is shown, render New Tab button separately below it */}
-          {pinnedTabs.length > 0 && <NewTabButton />}
-
-          {/* Main Tab Groups Section */}
-          <div className="flex-1 flex flex-col justify-between gap-1">
+          <LayoutGroup>
+            {/* Pinned Tabs Section */}
             <AnimatePresence initial={false}>
-              {sortedTabGroups.map((tabGroup, index) => (
-                <SidebarTabGroups
-                  key={tabGroup.id}
-                  tabGroup={tabGroup}
-                  isActive={activeTabGroup?.id === tabGroup.id || false}
-                  isFocused={!!focusedTab && tabGroup.tabs.some((tab) => tab.id === focusedTab.id)}
+              {pinnedTabs.map((tab, index) => (
+                <SidebarPinnedTab
+                  key={tab.id}
+                  tab={tab}
+                  isFocused={focusedTab?.id === tab.id}
                   isSpaceLight={isSpaceLight}
                   position={index}
-                  moveTab={moveTab}
+                  movePinnedTab={movePinnedTab}
                 />
               ))}
-              <SidebarTabDropTarget
-                spaceData={space}
-                isSpaceLight={isSpaceLight}
-                moveTab={moveTab}
-                biggestIndex={sortedTabGroups.length - 1}
-              />
             </AnimatePresence>
-          </div>
+
+            {/* Drag zone: if Clear divider visible, use it; otherwise use New Tab button */}
+            {pinnedTabs.length > 0 && ENABLE_SECTION_DEVIDER ? (
+              <SidebarPinnedTabDropTarget
+                isSpaceLight={isSpaceLight}
+                pinnedTabsLength={pinnedTabs.length}
+                movePinnedTab={movePinnedTab}
+              >
+                <AnimatePresence>
+                  <SidebarSectionDivider hasTabs={hasTabs} handleCloseAllTabs={handleCloseAllTabs} />
+                </AnimatePresence>
+              </SidebarPinnedTabDropTarget>
+            ) : (
+              <SidebarPinnedTabDropTarget
+                isSpaceLight={isSpaceLight}
+                pinnedTabsLength={pinnedTabs.length}
+                movePinnedTab={movePinnedTab}
+              >
+                <NewTabButton />
+              </SidebarPinnedTabDropTarget>
+            )}
+
+            {/* If Clear divider is shown, render New Tab button separately below it */}
+            {pinnedTabs.length > 0 && <NewTabButton />}
+
+            {/* Main Tab Groups Section */}
+            <div className="flex-1 flex flex-col justify-between gap-1">
+              <AnimatePresence initial={false}>
+                {sortedTabGroups.map((tabGroup, index) => (
+                  <SidebarTabGroups
+                    key={tabGroup.id}
+                    tabGroup={tabGroup}
+                    isActive={activeTabGroup?.id === tabGroup.id || false}
+                    isFocused={!!focusedTab && tabGroup.tabs.some((tab) => tab.id === focusedTab.id)}
+                    isSpaceLight={isSpaceLight}
+                    position={index}
+                    moveTab={moveTab}
+                  />
+                ))}
+                <SidebarTabDropTarget
+                  spaceData={space}
+                  isSpaceLight={isSpaceLight}
+                  moveTab={moveTab}
+                  biggestIndex={sortedTabGroups.length - 1}
+                />
+              </AnimatePresence>
+            </div>
+          </LayoutGroup>
         </SidebarMenu>
       </SidebarGroup>
     </div>

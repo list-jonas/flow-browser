@@ -127,6 +127,7 @@ export function SidebarTab({ tab, isFocused }: { tab: TabData; isFocused: boolea
         scale: { type: "spring", stiffness: 600, damping: 20 }
       }}
       layout
+      layoutId={`tab-${tab.id}`}
     >
       <div className="flex flex-row justify-between w-full h-full">
         {/* Normal layout */}
