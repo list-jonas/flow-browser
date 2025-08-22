@@ -27,8 +27,8 @@ export function getTabData(tab: Tab): TabData {
     isPictureInPicture: tab.isPictureInPicture,
     faviconURL: tab.faviconURL,
     asleep: tab.asleep,
-    isPinned: (tab as any).isPinned ?? false,
-    pinnedUrl: (tab as any).pinnedUrl ?? null,
+    isPinned: tab.isPinned ?? false,
+    pinnedUrl: tab.pinnedUrl ?? null,
 
     navHistory: tab.navHistory,
     navHistoryIndex: tab.navHistoryIndex
@@ -342,6 +342,52 @@ ipcMain.on("tabs:show-context-menu", (event, tabId: number) => {
       type: "separator"
     })
   );
+
+  // Move to submenu for pinning/unpinning
+  const isPinned = tab.isPinned ?? false;
+  const moveToMenu = new Menu();
+  moveToMenu.append(
+    new MenuItem({
+      label: "Pinned",
+      enabled: !isPinned,
+      click: () => {
+        tab.updateStateProperty("isPinned", true);
+        tab.updateStateProperty("pinnedUrl", tab.url);
+        tab.updateTabState();
+      }
+    })
+  );
+  moveToMenu.append(
+    new MenuItem({
+      label: "Normal",
+      enabled: isPinned,
+      click: () => {
+        tab.updateStateProperty("isPinned", false);
+        tab.updateStateProperty("pinnedUrl", null);
+        tab.updateTabState();
+      }
+    })
+  );
+
+  contextMenu.append(
+    new MenuItem({
+      label: "Move to",
+      submenu: moveToMenu
+    })
+  );
+
+  // Option to replace pinned URL with the current tab URL – only when different
+  if (isPinned && tab.pinnedUrl !== tab.url) {
+    contextMenu.append(
+      new MenuItem({
+        label: "Replace Pinned URL with Current",
+        click: () => {
+          tab.updateStateProperty("pinnedUrl", tab.url);
+          tab.updateTabState();
+        }
+      })
+    );
+  }
 
   contextMenu.append(
     new MenuItem({

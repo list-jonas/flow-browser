@@ -67,6 +67,12 @@ export function SidebarPinnedTab({ tab, isFocused, isSpaceLight, position, moveP
     }
   };
 
+  const handleContextMenu = (e: React.MouseEvent) => {
+    e.preventDefault();
+    if (!tab.id) return;
+    flow.tabs.showContextMenu(tab.id);
+  };
+
   const handleMouseDown = (e: React.MouseEvent) => {
     if (e.button === 0) handleClick();
     setIsPressed(true);
@@ -151,6 +157,7 @@ export function SidebarPinnedTab({ tab, isFocused, isSpaceLight, position, moveP
       {closestEdge === "top" && <DropIndicator isSpaceLight={isSpaceLight} />}
       <MotionSidebarMenuButton
         ref={ref}
+        onContextMenu={handleContextMenu}
         onMouseEnter={() => setIsHovered(true)}
         onMouseLeave={() => setIsHovered(false)}
         className={cn(
@@ -206,6 +213,9 @@ export function SidebarPinnedTab({ tab, isFocused, isSpaceLight, position, moveP
                 </motion.div>
               )}
             </AnimatePresence>
+            {tab.pinnedUrl && tab.pinnedUrl !== tab.url && (
+              <span className="mx-1 text-muted-foreground dark:text-white/50">/</span>
+            )}
             <span className="ml-1 truncate min-w-0 flex-1 font-medium">{tab.title}</span>
           </div>
           <div className={cn("flex flex-row items-center gap-0.5", open && "flex-shrink-0")}>
