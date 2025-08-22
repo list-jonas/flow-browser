@@ -79,23 +79,32 @@ export function SpaceSidebar({ space }: { space: Space }) {
 
   const movePinnedTab = useCallback(
     (tabId: number, newPosition: number) => {
-      // Ensure we are working with a fresh copy ordered by the persisted position
-      const sortedPinned = [...pinnedTabs].sort((a, b) => a.position - b.position);
+      // Work with a fresh copy ordered by the persisted position
+      const existingPinned = [...pinnedTabs].sort((a, b) => a.position - b.position);
+
+      // If the tab is not yet in the pinned list (e.g. dragged from normal list),
+      // temporarily include a minimal placeholder so that ordering can be derived.
+      const workingList = existingPinned.some((t) => t.id === tabId)
+        ? existingPinned
+        : [...existingPinned, { id: tabId, position: newPosition } as any];
 
       // Build a quick lookup from tabId → currentIndex for fast access inside the sort callback
-      const indexMap = new Map(sortedPinned.map((t, idx) => [t.id, idx]));
+      const indexMap = new Map(workingList.map((t, idx) => [t.id, idx]));
 
-      // Derive the new order by using the same comparator technique used for normal tabs
-      const reOrdered = [...sortedPinned].sort((a, b) => {
-        const aPos = a.id === tabId ? newPosition : (indexMap.get(a.id) ?? 0);
-        const bPos = b.id === tabId ? newPosition : (indexMap.get(b.id) ?? 0);
+      // Ensure the requested position is within current bounds (after potential removal)
+      const clampedPosition = Math.min(newPosition, workingList.length);
+
+      // Derive the new order by applying the same comparator technique used for normal tabs
+      const reOrdered = [...workingList].sort((a, b) => {
+        const aPos = a.id === tabId ? clampedPosition : (indexMap.get(a.id) ?? 0);
+        const bPos = b.id === tabId ? clampedPosition : (indexMap.get(b.id) ?? 0);
         return aPos - bPos;
       });
 
       // Persist the updated sequential positions (0,1,2,...) back to main process
-      reOrdered.forEach((tab, idx) => {
-        if (tab.position !== idx) {
-          flow.tabs.moveTab(tab.id, idx);
+      reOrdered.forEach((t, idx) => {
+        if (t.position !== idx) {
+          flow.tabs.moveTab(t.id, idx);
         }
       });
     },
