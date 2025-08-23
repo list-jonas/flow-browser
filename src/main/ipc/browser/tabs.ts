@@ -161,6 +161,22 @@ ipcMain.handle("tabs:switch-to-tab", async (event, tabId: number) => {
   return true;
 });
 
+// Put a tab to sleep
+ipcMain.handle("tabs:put-to-sleep", async (event, tabId: number) => {
+  const webContents = event.sender;
+  const window = browser?.getWindowFromWebContents(webContents);
+  if (!window) return false;
+
+  const tabManager = browser?.tabs;
+  if (!tabManager) return false;
+
+  const tab = tabManager.getTabById(tabId);
+  if (!tab) return false;
+
+  tab.putToSleep();
+  return true;
+});
+
 ipcMain.handle("tabs:new-tab", async (event, url?: string, isForeground?: boolean, spaceId?: string) => {
   const webContents = event.sender;
   const window = browser?.getWindowFromWebContents(webContents) || browser?.getWindows()[0];
@@ -220,7 +236,7 @@ ipcMain.handle("tabs:disable-picture-in-picture", async (event, goBackToTab: boo
   return disabled;
 });
 
-ipcMain.handle("tabs:set-tab-muted", async (_event, tabId: number, muted: boolean) => {
+ipcMain.handle("tabs:set-tab-muted", async (event, tabId: number, muted: boolean) => {
   if (!browser) return false;
 
   const tabManager = browser.tabs;

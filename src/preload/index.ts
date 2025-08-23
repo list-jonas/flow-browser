@@ -261,6 +261,9 @@ const tabsAPI: FlowTabsAPI = {
 
   setTabMuted: async (tabId: number, muted: boolean) => {
     return ipcRenderer.invoke("tabs:set-tab-muted", tabId, muted);
+  },
+  putToSleep: async (tabId: number) => {
+    return ipcRenderer.invoke("tabs:put-to-sleep", tabId);
   }
 };
 

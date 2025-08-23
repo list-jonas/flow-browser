@@ -4,6 +4,7 @@ import { cn, craftActiveFaviconURL } from "@/lib/utils";
 import { Minus, Volume2, VolumeX } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { motion, AnimatePresence } from "motion/react";
+import { useTabs } from "@/components/providers/tabs-provider";
 import { TabData } from "~/types/tabs";
 import type { TabGroupSourceData } from "@/components/browser-ui/sidebar/content/sidebar-tab-groups";
 import {
@@ -70,6 +71,7 @@ export function SidebarPinnedTab({ tab, isFocused, isSpaceLight, position, moveP
   const isMuted = tab.muted;
   const isPlayingAudio = tab.audible;
   const { open } = useSidebar();
+  const { getTabGroups } = useTabs();
 
   const ref = useRef<HTMLButtonElement>(null);
   const [closestEdge, setClosestEdge] = useState<Edge | null>(null);
@@ -84,8 +86,8 @@ export function SidebarPinnedTab({ tab, isFocused, isSpaceLight, position, moveP
   }, [tab.faviconURL]);
 
   // navigation handlers
-  const handleClick = () => tab.id && flow.tabs.switchToTab(tab.id);
-  const handleReset = (e: React.MouseEvent) => {
+  const handleRowClick = () => tab.id && flow.tabs.switchToTab(tab.id);
+  const handleFaviconReset = (e: React.MouseEvent) => {
     e.preventDefault();
     if (!tab.id) return;
     if (tab.pinnedUrl) {
@@ -102,7 +104,7 @@ export function SidebarPinnedTab({ tab, isFocused, isSpaceLight, position, moveP
   };
 
   const handleMouseDown = (e: React.MouseEvent) => {
-    if (e.button === 0) handleClick();
+    if (e.button === 0) handleRowClick();
     setIsPressed(true);
   };
 
@@ -110,6 +112,36 @@ export function SidebarPinnedTab({ tab, isFocused, isSpaceLight, position, moveP
     e.stopPropagation();
     if (!tab.id) return;
     flow.tabs.setTabMuted(tab.id, !tab.muted);
+  };
+
+  const handlePutToSleep = async (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (!tab.id) return;
+
+    // Helper to switch focus after putting tab to sleep
+    const switchFocusAfterSleep = () => {
+      const groups = getTabGroups(tab.spaceId);
+      for (const g of groups) {
+        for (const t of g.tabs) {
+          if (!t.isPinned) {
+            flow.tabs.switchToTab(t.id);
+            return;
+          }
+        }
+      }
+    };
+
+    // If current URL differs from pinned URL, navigate first then sleep after slight delay
+    if (tab.pinnedUrl && tab.url !== tab.pinnedUrl) {
+      flow.navigation.goTo(tab.pinnedUrl, tab.id);
+      // Give the navigation IPC a brief moment to propagate before sleeping
+      setTimeout(() => {
+        flow.tabs.putToSleep(tab.id).then(switchFocusAfterSleep);
+      }, 150);
+    } else {
+      await flow.tabs.putToSleep(tab.id);
+      switchFocusAfterSleep();
+    }
   };
 
   const VolumeIcon = isMuted ? VolumeX : Volume2;
@@ -210,14 +242,13 @@ export function SidebarPinnedTab({ tab, isFocused, isSpaceLight, position, moveP
       >
         <div className="flex flex-row justify-between w-full h-full">
           <div className={cn("flex select-none flex-row items-center flex-1", open && "min-w-0 mr-1")}>
-            <div className="w-4 h-4 select-none flex-shrink-0 mr-1">
+            <div className="w-4 h-4 select-none flex-shrink-0 mr-1" onClick={handleFaviconReset}>
               {!noFavicon && (
                 <img
                   src={craftActiveFaviconURL(tab.id, tab.faviconURL)}
                   alt={tab.title}
                   className="size-full rounded-sm user-drag-none object-contain overflow-hidden"
                   onError={() => setIsError(true)}
-                  onClick={handleClick}
                   onMouseDown={handleMouseDown}
                 />
               )}
@@ -246,7 +277,7 @@ export function SidebarPinnedTab({ tab, isFocused, isSpaceLight, position, moveP
               )}
             </AnimatePresence>
             {tab.pinnedUrl && tab.url && tab.pinnedUrl !== tab.url && (
-              <span className="mx-1 text-muted-foreground dark:text-white/50">/</span>
+              <span className="text-muted-foreground dark:text-white/50">/</span>
             )}
             {isEditingName ? (
               <input
@@ -286,7 +317,7 @@ export function SidebarPinnedTab({ tab, isFocused, isSpaceLight, position, moveP
                 <Button
                   variant="ghost"
                   size="icon"
-                  onClick={handleReset}
+                  onClick={handlePutToSleep}
                   className="size-5 bg-transparent rounded-sm hover:bg-black/10 dark:hover:bg-white/10 flex items-center justify-center"
                   onMouseDown={(event) => event.stopPropagation()}
                 >

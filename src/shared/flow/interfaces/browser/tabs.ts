@@ -80,4 +80,10 @@ export interface FlowTabsAPI {
    * @param newPosition The new position of the tab
    */
   moveTabToWindowSpace: (tabId: number, spaceId: string, newPosition?: number) => Promise<boolean>;
+
+  /**
+   * Put a tab to sleep
+   * @param tabId The id of the tab to put to sleep
+   */
+  putToSleep: (tabId: number) => Promise<boolean>;
 }
