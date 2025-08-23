@@ -29,6 +29,7 @@ export function getTabData(tab: Tab): TabData {
     asleep: tab.asleep,
     isPinned: tab.isPinned ?? false,
     pinnedUrl: tab.pinnedUrl ?? null,
+    pinnedName: tab.pinnedName ?? null,
 
     navHistory: tab.navHistory,
     navHistoryIndex: tab.navHistoryIndex
@@ -235,29 +236,36 @@ ipcMain.handle("tabs:set-tab-muted", async (_event, tabId: number, muted: boolea
   return true;
 });
 
-ipcMain.handle("tabs:set-tab-pinned", async (_event, tabId: number, pinned: boolean, pinnedUrl?: string | null) => {
-  if (!browser) return false;
+ipcMain.handle(
+  "tabs:set-tab-pinned",
+  async (_event, tabId: number, pinned: boolean, pinnedUrl?: string | null, pinnedName?: string | null) => {
+    if (!browser) return false;
 
-  const tabManager = browser.tabs;
-  if (!tabManager) return false;
+    const tabManager = browser.tabs;
+    if (!tabManager) return false;
 
-  const tab = tabManager.getTabById(tabId);
-  if (!tab) return false;
+    const tab = tabManager.getTabById(tabId);
+    if (!tab) return false;
 
-  tab.updateStateProperty("isPinned", pinned);
+    tab.updateStateProperty("isPinned", pinned);
 
-  if (pinned) {
-    const urlToPin = pinnedUrl !== undefined ? pinnedUrl : tab.url;
-    tab.updateStateProperty("pinnedUrl", urlToPin);
-  } else {
-    // Clear pinned URL when unpinning
-    tab.updateStateProperty("pinnedUrl", null);
+    if (pinned) {
+      const urlToPin = pinnedUrl !== undefined ? pinnedUrl : tab.url;
+      tab.updateStateProperty("pinnedUrl", urlToPin);
+      if (pinnedName !== undefined) {
+        tab.updateStateProperty("pinnedName", pinnedName);
+      }
+    } else {
+      // Clear pinned URL and name when unpinning
+      tab.updateStateProperty("pinnedUrl", null);
+      tab.updateStateProperty("pinnedName", null);
+    }
+
+    // No direct event for pinned state change, update tab state manually
+    tab.updateTabState();
+    return true;
   }
-
-  // No direct event for pinned state change, update tab state manually
-  tab.updateTabState();
-  return true;
-});
+);
 
 ipcMain.handle("tabs:move-tab", async (event, tabId: number, newPosition: number) => {
   const webContents = event.sender;

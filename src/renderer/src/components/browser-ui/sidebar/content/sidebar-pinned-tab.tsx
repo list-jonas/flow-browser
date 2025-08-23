@@ -39,6 +39,34 @@ export function SidebarPinnedTab({ tab, isFocused, isSpaceLight, position, moveP
   const [isHovered, setIsHovered] = useState(false);
   const noFavicon = !cachedFaviconUrl || isError;
 
+  // state for editable pinned name
+  const [isEditingName, setIsEditingName] = useState(false);
+  const displayName =
+    tab.pinnedUrl && tab.url && tab.pinnedUrl === tab.url
+      ? (tab.pinnedName ?? tab.title)
+      : tab.url
+        ? tab.title
+        : (tab.pinnedName ?? tab.title);
+  const [editedName, setEditedName] = useState(tab.pinnedName ?? tab.title);
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    if (isEditingName) {
+      inputRef.current?.focus();
+      inputRef.current?.select();
+    } else {
+      setEditedName(tab.pinnedName ?? "");
+    }
+  }, [tab.pinnedName, isEditingName]);
+
+  const commitEditedName = () => {
+    if (!tab.id) return;
+    const trimmed = editedName.trim();
+    const newName = trimmed.length > 0 ? trimmed : null;
+    flow.tabs.setTabPinned(tab.id, true, tab.pinnedUrl ?? tab.url ?? "", newName);
+    setIsEditingName(false);
+  };
+
   const isMuted = tab.muted;
   const isPlayingAudio = tab.audible;
   const { open } = useSidebar();
@@ -181,8 +209,8 @@ export function SidebarPinnedTab({ tab, isFocused, isSpaceLight, position, moveP
         layoutId={`tab-${tab.id}`}
       >
         <div className="flex flex-row justify-between w-full h-full">
-          <div className={cn("flex flex-row items-center flex-1", open && "min-w-0 mr-1")}>
-            <div className="w-4 h-4 flex-shrink-0 mr-1">
+          <div className={cn("flex select-none flex-row items-center flex-1", open && "min-w-0 mr-1")}>
+            <div className="w-4 h-4 select-none flex-shrink-0 mr-1">
               {!noFavicon && (
                 <img
                   src={craftActiveFaviconURL(tab.id, tab.faviconURL)}
@@ -220,7 +248,37 @@ export function SidebarPinnedTab({ tab, isFocused, isSpaceLight, position, moveP
             {tab.pinnedUrl && tab.url && tab.pinnedUrl !== tab.url && (
               <span className="mx-1 text-muted-foreground dark:text-white/50">/</span>
             )}
-            <span className="ml-1 truncate min-w-0 flex-1 font-medium">{tab.title}</span>
+            {isEditingName ? (
+              <input
+                ref={inputRef}
+                value={editedName || tab.pinnedName || tab.title}
+                onChange={(e) => setEditedName(e.target.value)}
+                onMouseDown={(e) => {
+                  e.stopPropagation();
+                }}
+                onBlur={commitEditedName}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") commitEditedName();
+                  if (e.key === "Escape") setIsEditingName(false);
+                }}
+                className="ml-1 truncate min-w-0 flex-1 font-medium bg-transparent outline-none"
+              />
+            ) : (
+              <span
+                className="ml-1 truncate min-w-0 flex-1 font-medium"
+                onDoubleClick={() => {
+                  setIsEditingName(true);
+                  setTimeout(() => {
+                    if (inputRef.current) {
+                      inputRef.current.focus();
+                      inputRef.current.select();
+                    }
+                  }, 0);
+                }}
+              >
+                {displayName}
+              </span>
+            )}
           </div>
           <div className={cn("flex flex-row items-center gap-0.5", open && "flex-shrink-0")}>
             {isHovered && (

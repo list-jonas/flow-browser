@@ -29,6 +29,8 @@ export type TabData = {
   isPinned?: boolean;
   /** The original URL the tab resets to when the “-” button is clicked */
   pinnedUrl?: string | null;
+  /** Optional custom name to display when the tab is showing its pinned URL */
+  pinnedName?: string | null;
 
   navHistory: NavigationEntry[];
   navHistoryIndex: number;

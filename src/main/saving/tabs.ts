@@ -149,6 +149,7 @@ async function createTabsFromTabDatas(browser: Browser, tabDatas: TabData[]) {
         position: tabData.position,
         isPinned: tabData.isPinned,
         pinnedUrl: tabData.pinnedUrl,
+        pinnedName: tabData.pinnedName,
         navHistory: tabData.navHistory,
         navHistoryIndex: tabData.navHistoryIndex,
         uniqueId: tabData.uniqueId,

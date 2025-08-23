@@ -62,7 +62,8 @@ export interface FlowTabsAPI {
   setTabPinned: (
     tabId: number,
     pinned: boolean,
-    pinnedUrl?: string | null
+    pinnedUrl?: string | null,
+    pinnedName?: string | null
   ) => Promise<boolean>;
 
   /**
