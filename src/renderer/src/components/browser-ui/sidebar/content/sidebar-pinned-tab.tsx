@@ -38,6 +38,7 @@ export function SidebarPinnedTab({ tab, isFocused, isSpaceLight, position, moveP
   const [isError, setIsError] = useState(false);
   const [isPressed, setIsPressed] = useState(false);
   const [isHovered, setIsHovered] = useState(false);
+  const [isIconHovered, setIsIconHovered] = useState(false);
   const noFavicon = !cachedFaviconUrl || isError;
 
   // state for editable pinned name
@@ -242,7 +243,12 @@ export function SidebarPinnedTab({ tab, isFocused, isSpaceLight, position, moveP
       >
         <div className="flex flex-row justify-between w-full h-full">
           <div className={cn("flex select-none flex-row items-center flex-1", open && "min-w-0 mr-1")}>
-            <div className="w-4 h-4 select-none flex-shrink-0 mr-1" onClick={handleFaviconReset}>
+            <div
+              className="w-4 h-4 select-none flex-shrink-0 mr-1"
+              onClick={handleFaviconReset}
+              onMouseEnter={() => setIsIconHovered(true)}
+              onMouseLeave={() => setIsIconHovered(false)}
+            >
               {!noFavicon && (
                 <img
                   src={craftActiveFaviconURL(tab.id, tab.faviconURL)}
@@ -271,45 +277,65 @@ export function SidebarPinnedTab({ tab, isFocused, isSpaceLight, position, moveP
                     className="size-5 bg-transparent rounded-sm hover:bg-black/10 dark:hover:bg-white/10"
                     onMouseDown={(event) => event.stopPropagation()}
                   >
-                    <VolumeIcon className={cn("size-4", "text-muted-foreground/60 dark:text-white/50")} />
+                    <VolumeIcon className={cn("size-4", "text-muted-foreground/60")} />
                   </Button>
                 </motion.div>
               )}
             </AnimatePresence>
             {tab.pinnedUrl && tab.url && tab.pinnedUrl !== tab.url && (
-              <span className="text-muted-foreground dark:text-white/50">/</span>
+              <span className={`text-muted-foreground ${isIconHovered && "invisible"}`}>/</span>
             )}
-            {isEditingName ? (
-              <input
-                ref={inputRef}
-                value={editedName || tab.pinnedName || tab.title}
-                onChange={(e) => setEditedName(e.target.value)}
-                onMouseDown={(e) => {
-                  e.stopPropagation();
-                }}
-                onBlur={commitEditedName}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter") commitEditedName();
-                  if (e.key === "Escape") setIsEditingName(false);
-                }}
-                className="ml-1 truncate min-w-0 flex-1 font-medium bg-transparent outline-none"
-              />
-            ) : (
-              <span
-                className="ml-1 truncate min-w-0 flex-1 font-medium"
-                onDoubleClick={() => {
-                  setIsEditingName(true);
-                  setTimeout(() => {
-                    if (inputRef.current) {
-                      inputRef.current.focus();
-                      inputRef.current.select();
-                    }
-                  }, 0);
-                }}
-              >
-                {displayName}
-              </span>
-            )}
+            <div className="flex flex-col ml-1 relative">
+              {isEditingName ? (
+                <input
+                  ref={inputRef}
+                  value={editedName || tab.pinnedName || tab.title}
+                  onChange={(e) => setEditedName(e.target.value)}
+                  onMouseDown={(e) => {
+                    e.stopPropagation();
+                  }}
+                  onBlur={commitEditedName}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") commitEditedName();
+                    if (e.key === "Escape") setIsEditingName(false);
+                  }}
+                  className="truncate min-w-0 flex-1 font-medium bg-transparent outline-none"
+                />
+              ) : (
+                <span
+                  className="truncate min-w-0 flex-1 font-medium"
+                  style={{
+                    position: "relative",
+                    top: isIconHovered && tab.pinnedUrl && tab.url && tab.pinnedUrl !== tab.url ? "-7px" : "0",
+                    transition: "top 0.2s ease"
+                  }}
+                  onDoubleClick={() => {
+                    setIsEditingName(true);
+                    setTimeout(() => {
+                      if (inputRef.current) {
+                        inputRef.current.focus();
+                        inputRef.current.select();
+                      }
+                    }, 0);
+                  }}
+                >
+                  {displayName}
+                </span>
+              )}
+              <AnimatePresence>
+                {isIconHovered && tab.pinnedUrl && tab.url && tab.pinnedUrl !== tab.url && (
+                  <motion.p
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 10 }}
+                    exit={{ opacity: 0, y: 20 }}
+                    transition={{ duration: 0.2 }}
+                    className="text-xs text-muted-foreground absolute"
+                  >
+                    Back to pinned
+                  </motion.p>
+                )}
+              </AnimatePresence>
+            </div>
           </div>
           <div className={cn("flex flex-row items-center gap-0.5", open && "flex-shrink-0")}>
             {isHovered && (
