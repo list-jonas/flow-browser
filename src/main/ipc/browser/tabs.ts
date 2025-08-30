@@ -413,6 +413,19 @@ ipcMain.on("tabs:show-context-menu", (event, tabId: number) => {
     );
   }
 
+  // Add Mute/Unmute option for tabs playing audio or already muted
+  if (tab.audible || tab.muted) {
+    contextMenu.append(
+      new MenuItem({
+        label: tab.muted ? "Unmute Tab" : "Mute Tab",
+        click: () => {
+          tab.webContents.setAudioMuted(!tab.muted);
+          tab.updateTabState();
+        }
+      })
+    );
+  }
+
   contextMenu.append(
     new MenuItem({
       label: isTabVisible ? "Cannot put active tab to sleep" : tab.asleep ? "Wake Tab" : "Put Tab to Sleep",
