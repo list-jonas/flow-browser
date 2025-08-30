@@ -18,6 +18,7 @@ export type BaseTabProps = {
   renderRightSide?: (isHovered: boolean) => React.ReactNode;
   renderLeftSide?: () => React.ReactNode;
   children?: React.ReactNode;
+  className?: string;
 };
 
 export const BaseTab = forwardRef(function BaseTab(
@@ -30,7 +31,8 @@ export const BaseTab = forwardRef(function BaseTab(
     onContextMenu,
     renderRightSide,
     renderLeftSide,
-    children
+    children,
+    className
   }: BaseTabProps,
   ref: ForwardedRef<HTMLButtonElement>
 ) {
@@ -142,7 +144,8 @@ export const BaseTab = forwardRef(function BaseTab(
         isFocused && "bg-white dark:bg-white/25",
         isFocused && "active:bg-white active:dark:bg-white/25",
         "text-gray-900 dark:text-gray-200",
-        "transition-colors"
+        "transition-colors",
+        className
       )}
       initial={{ opacity: 0, x: -10 }}
       animate={{

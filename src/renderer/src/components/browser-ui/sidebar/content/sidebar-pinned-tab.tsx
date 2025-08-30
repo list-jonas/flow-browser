@@ -7,7 +7,7 @@ import { TabData } from "~/types/tabs";
 import { Edge } from "@atlaskit/pragmatic-drag-and-drop-hitbox/closest-edge";
 import { DropIndicator } from "@/components/browser-ui/sidebar/content/space-sidebar";
 import { BaseTab } from "@/components/browser-ui/sidebar/content/shared/base-tab";
-import { TabFavicon } from "@/components/browser-ui/sidebar/content/shared/tab-elements";
+import { TabFavicon, TabAudioIndicator } from "@/components/browser-ui/sidebar/content/shared/tab-elements";
 import { useTabDragDrop } from "@/components/browser-ui/sidebar/content/shared/tab-drag-drop";
 
 export type PinnedTabSourceData = {
@@ -169,7 +169,8 @@ export function SidebarPinnedTab({ tab, isFocused, isSpaceLight, position, moveP
             {tab.pinnedUrl && tab.url && tab.pinnedUrl !== tab.url && (
               <span className={`text-muted-foreground ${isIconHovered && "invisible"}`}>/</span>
             )}
-            <div className="flex flex-col ml-1 relative">
+            <TabAudioIndicator isPlayingAudio={tab.audible || false} isMuted={tab.muted || false} tabId={tab.id} />
+            <div className="flex flex-col ml-1 relative overflow-hidden">
               {isEditingName ? (
                 <input
                   ref={inputRef}
@@ -187,11 +188,13 @@ export function SidebarPinnedTab({ tab, isFocused, isSpaceLight, position, moveP
                 />
               ) : (
                 <span
-                  className="truncate min-w-0 flex-1 font-medium"
+                  className="truncate min-w-0 flex-1 font-medium text-ellipsis overflow-hidden"
                   style={{
                     position: "relative",
                     top: isIconHovered && tab.pinnedUrl && tab.url && tab.pinnedUrl !== tab.url ? "-7px" : "0",
-                    transition: "top 0.2s ease"
+                    transition: "top 0.2s ease",
+                    maxWidth: "100%",
+                    display: "inline-block"
                   }}
                   onDoubleClick={() => {
                     setIsEditingName(true);
