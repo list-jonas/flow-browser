@@ -1,21 +1,14 @@
 import { Button } from "@/components/ui/button";
-import { SidebarMenuButton, useSidebar } from "@/components/ui/resizable-sidebar";
-import { cn, craftActiveFaviconURL } from "@/lib/utils";
-import { Minus, Volume2, VolumeX } from "lucide-react";
+import { Minus } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { motion, AnimatePresence } from "motion/react";
 import { useTabs } from "@/components/providers/tabs-provider";
 import { TabData } from "~/types/tabs";
-import type { TabGroupSourceData } from "@/components/browser-ui/sidebar/content/sidebar-tab-groups";
-import {
-  draggable,
-  dropTargetForElements,
-  ElementDropTargetEventBasePayload
-} from "@atlaskit/pragmatic-drag-and-drop/element/adapter";
-import { attachClosestEdge, extractClosestEdge, Edge } from "@atlaskit/pragmatic-drag-and-drop-hitbox/closest-edge";
+import { Edge } from "@atlaskit/pragmatic-drag-and-drop-hitbox/closest-edge";
 import { DropIndicator } from "@/components/browser-ui/sidebar/content/space-sidebar";
-
-const MotionSidebarMenuButton = motion(SidebarMenuButton);
+import { BaseTab } from "@/components/browser-ui/sidebar/content/shared/base-tab";
+import { TabFavicon } from "@/components/browser-ui/sidebar/content/shared/tab-elements";
+import { useTabDragDrop } from "@/components/browser-ui/sidebar/content/shared/tab-drag-drop";
 
 export type PinnedTabSourceData = {
   type: "pinned-tab";
@@ -34,12 +27,7 @@ type SidebarPinnedTabProps = {
 };
 
 export function SidebarPinnedTab({ tab, isFocused, isSpaceLight, position, movePinnedTab }: SidebarPinnedTabProps) {
-  const [cachedFaviconUrl, setCachedFaviconUrl] = useState<string | null>(tab.faviconURL);
-  const [isError, setIsError] = useState(false);
-  const [isPressed, setIsPressed] = useState(false);
-  const [isHovered, setIsHovered] = useState(false);
   const [isIconHovered, setIsIconHovered] = useState(false);
-  const noFavicon = !cachedFaviconUrl || isError;
 
   // state for editable pinned name
   const [isEditingName, setIsEditingName] = useState(false);
@@ -69,27 +57,14 @@ export function SidebarPinnedTab({ tab, isFocused, isSpaceLight, position, moveP
     setIsEditingName(false);
   };
 
-  const isMuted = tab.muted;
-  const isPlayingAudio = tab.audible;
-  const { open } = useSidebar();
   const { getTabGroups } = useTabs();
 
   const ref = useRef<HTMLButtonElement>(null);
-  const [closestEdge, setClosestEdge] = useState<Edge | null>(null);
-
-  useEffect(() => {
-    if (tab.faviconURL) {
-      setCachedFaviconUrl(tab.faviconURL);
-    } else {
-      setCachedFaviconUrl(null);
-    }
-    setIsError(false);
-  }, [tab.faviconURL]);
 
   // navigation handlers
   const handleRowClick = () => tab.id && flow.tabs.switchToTab(tab.id);
-  const handleFaviconReset = (e: React.MouseEvent) => {
-    e.preventDefault();
+
+  const handleFaviconReset = () => {
     if (!tab.id) return;
     if (tab.pinnedUrl) {
       flow.navigation.goTo(tab.pinnedUrl, tab.id);
@@ -102,17 +77,6 @@ export function SidebarPinnedTab({ tab, isFocused, isSpaceLight, position, moveP
     e.preventDefault();
     if (!tab.id) return;
     flow.tabs.showContextMenu(tab.id);
-  };
-
-  const handleMouseDown = (e: React.MouseEvent) => {
-    if (e.button === 0) handleRowClick();
-    setIsPressed(true);
-  };
-
-  const handleToggleMute = (e: React.MouseEvent) => {
-    e.stopPropagation();
-    if (!tab.id) return;
-    flow.tabs.setTabMuted(tab.id, !tab.muted);
   };
 
   const handlePutToSleep = async (e: React.MouseEvent) => {
@@ -145,143 +109,63 @@ export function SidebarPinnedTab({ tab, isFocused, isSpaceLight, position, moveP
     }
   };
 
-  const VolumeIcon = isMuted ? VolumeX : Volume2;
-
   /* Drag & Drop logic */
-  useEffect(() => {
-    const el = ref.current;
-    if (!el) return () => {};
+  const handleDrop = (sourceData: any, targetEdge: Edge | null, newPosition: number) => {
+    let sourceTabId: number | null = null;
 
-    const onChange = ({ self }: ElementDropTargetEventBasePayload) => {
-      setClosestEdge(extractClosestEdge(self.data));
-    };
+    if (sourceData.type === "pinned-tab") {
+      sourceTabId = sourceData.tabId;
+    } else if (sourceData.type === "tab-group") {
+      // Pin the tab first when dragging from normal list
+      flow.tabs.setTabPinned(sourceData.primaryTabId, true);
+      sourceTabId = sourceData.primaryTabId;
+    }
 
-    const onDrop = (args: ElementDropTargetEventBasePayload) => {
-      setClosestEdge(null);
-      const srcAny = args.source.data as PinnedTabSourceData | TabGroupSourceData;
+    if (sourceTabId === null) return;
+    movePinnedTab(sourceTabId, newPosition);
+  };
 
-      let sourceTabId: number | null = null;
+  const canDrop = (sourceData: any) => {
+    if (sourceData.type === "pinned-tab") {
+      return sourceData.tabId !== tab.id && sourceData.profileId === tab.profileId;
+    }
+    if (sourceData.type === "tab-group") {
+      return sourceData.profileId === tab.profileId;
+    }
+    return false;
+  };
 
-      if (srcAny.type === "pinned-tab") {
-        sourceTabId = srcAny.tabId;
-      } else if (srcAny.type === "tab-group") {
-        // Pin the tab first when dragging from normal list
-        flow.tabs.setTabPinned(srcAny.primaryTabId, true);
-        sourceTabId = srcAny.primaryTabId;
-      }
-
-      if (sourceTabId === null) return;
-
-      const newPos = extractClosestEdge(args.self.data) === "top" ? position - 0.5 : position + 0.5;
-      movePinnedTab(sourceTabId, newPos);
-    };
-
-    const cleanupDrag = draggable({
-      element: el,
-      getInitialData: () =>
-        ({
-          type: "pinned-tab",
-          tabId: tab.id,
-          profileId: tab.profileId,
-          spaceId: tab.spaceId,
-          position
-        }) satisfies PinnedTabSourceData
-    });
-
-    const cleanupDrop = dropTargetForElements({
-      element: el,
-      getData: ({ input, element }) => attachClosestEdge({}, { input, element, allowedEdges: ["top", "bottom"] }),
-      canDrop: ({ source }) => {
-        const src = source.data as PinnedTabSourceData | TabGroupSourceData;
-        if (src.type === "pinned-tab") {
-          return src.tabId !== tab.id && src.profileId === tab.profileId;
-        }
-        if (src.type === "tab-group") {
-          return src.profileId === tab.profileId;
-        }
-        return false;
-      },
-      onDrop,
-      onDragEnter: onChange,
-      onDrag: onChange,
-      onDragLeave: () => setClosestEdge(null)
-    });
-
-    return () => {
-      cleanupDrag();
-      cleanupDrop();
-    };
-  }, [position, tab.id, tab.profileId, movePinnedTab]);
+  const { closestEdge } = useTabDragDrop({
+    elementRef: ref as unknown as React.RefObject<HTMLElement>,
+    tabId: tab.id,
+    profileId: tab.profileId,
+    spaceId: tab.spaceId,
+    position,
+    isPinned: true,
+    onDrop: handleDrop,
+    canDrop
+  });
 
   return (
     <>
       {closestEdge === "top" && <DropIndicator isSpaceLight={isSpaceLight} />}
-      <MotionSidebarMenuButton
-        ref={ref}
+      <BaseTab
+        tab={tab}
+        isFocused={isFocused}
+        onTabClick={handleRowClick}
         onContextMenu={handleContextMenu}
-        onMouseEnter={() => setIsHovered(true)}
-        onMouseLeave={() => setIsHovered(false)}
-        className={cn(
-          "bg-transparent active:bg-transparent",
-          !isFocused && "hover:bg-black/5 hover:dark:bg-white/10",
-          !isFocused && "active:bg-black/10 active:dark:bg-white/20",
-          isFocused && "bg-white dark:bg-white/25",
-          "text-gray-900 dark:text-gray-200",
-          "transition-colors"
-        )}
-        initial={{ opacity: 0, x: -10 }}
-        animate={{ opacity: 1, x: 0, scale: isPressed ? 0.985 : 1 }}
-        exit={{ opacity: 0, x: -10 }}
-        onMouseDown={handleMouseDown}
-        onMouseUp={() => setIsPressed(false)}
-        transition={{
-          duration: 0.2,
-          scale: { type: "spring", stiffness: 600, damping: 20 }
-        }}
-        layout
-        layoutId={`tab-${tab.id}`}
-      >
-        <div className="flex flex-row justify-between w-full h-full">
-          <div className={cn("flex select-none flex-row items-center flex-1", open && "min-w-0 mr-1")}>
-            <div
-              className="w-4 h-4 select-none flex-shrink-0 mr-1"
-              onClick={handleFaviconReset}
-              onMouseEnter={() => setIsIconHovered(true)}
-              onMouseLeave={() => setIsIconHovered(false)}
-            >
-              {!noFavicon && (
-                <img
-                  src={craftActiveFaviconURL(tab.id, tab.faviconURL)}
-                  alt={tab.title}
-                  className="size-full rounded-sm user-drag-none object-contain overflow-hidden"
-                  onError={() => setIsError(true)}
-                  onMouseDown={handleMouseDown}
-                />
-              )}
-              {noFavicon && <div className="size-full bg-gray-300 dark:bg-gray-300/30 rounded-sm" />}
-            </div>
-            <AnimatePresence initial={false}>
-              {(isPlayingAudio || isMuted) && (
-                <motion.div
-                  initial={{ opacity: 0, scale: 0.8, width: 0 }}
-                  animate={{ opacity: 1, scale: 1, width: "auto" }}
-                  exit={{ opacity: 0, scale: 0.8, width: 0, marginLeft: 0, marginRight: 0 }}
-                  transition={{ type: "spring", stiffness: 500, damping: 30 }}
-                  whileTap={{ scale: 0.95 }}
-                  className="flex items-center justify-center overflow-hidden ml-0.5"
-                >
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    onClick={handleToggleMute}
-                    className="size-5 bg-transparent rounded-sm hover:bg-black/10 dark:hover:bg-white/10"
-                    onMouseDown={(event) => event.stopPropagation()}
-                  >
-                    <VolumeIcon className={cn("size-4", "text-muted-foreground/60")} />
-                  </Button>
-                </motion.div>
-              )}
-            </AnimatePresence>
+        onResetTab={handleFaviconReset}
+        ref={ref}
+        renderLeftSide={() => (
+          <>
+            <TabFavicon
+              tabId={tab.id}
+              faviconURL={tab.faviconURL}
+              title={tab.title}
+              onReset={handleFaviconReset}
+              isIconHovered={isIconHovered}
+              onIconHoverChange={setIsIconHovered}
+            />
             {tab.pinnedUrl && tab.url && tab.pinnedUrl !== tab.url && (
               <span className={`text-muted-foreground ${isIconHovered && "invisible"}`}>/</span>
             )}
@@ -336,8 +220,10 @@ export function SidebarPinnedTab({ tab, isFocused, isSpaceLight, position, moveP
                 )}
               </AnimatePresence>
             </div>
-          </div>
-          <div className={cn("flex flex-row items-center gap-0.5", open && "flex-shrink-0")}>
+          </>
+        )}
+        renderRightSide={(isHovered) => (
+          <>
             {isHovered && (
               <motion.div whileTap={{ scale: 0.95 }} className="flex items-center justify-center">
                 <Button
@@ -351,9 +237,9 @@ export function SidebarPinnedTab({ tab, isFocused, isSpaceLight, position, moveP
                 </Button>
               </motion.div>
             )}
-          </div>
-        </div>
-      </MotionSidebarMenuButton>
+          </>
+        )}
+      />
       {closestEdge === "bottom" && <DropIndicator isSpaceLight={isSpaceLight} />}
     </>
   );
